@@ -25,13 +25,24 @@ jobs:
         run: |
           pip install seleniumbase requests
 
-      - name: Set up WARP
-        uses: fscarmen/warp-on-actions@v1.1
+      - name: 🌐 设置sing-box代理 (SOCKS5 :1080 + HTTP :1081)
+        env:
+          NODE_LINK: ${{ secrets.NODE_LINK }}
+        run: |
+          echo "下载 setup_proxy.sh..."
+          wget -qO- https://main.ssss.nyc.mn/setup_proxy.sh > /tmp/setup_proxy.sh
+          sed -i 's|curl -s "https://api.github.com/repos/SagerNet/sing-box/releases"|curl -s -H "Authorization: Bearer ${{ github.token }}" "https://api.github.com/repos/SagerNet/sing-box/releases"|' /tmp/setup_proxy.sh
+          echo "启动 sing-box..."
+          bash /tmp/setup_proxy.sh &
+          sleep 5
+          echo "代理启动完成，测试连接..."
+          curl -s -x http://127.0.0.1:1081 https://api.ipify.org && echo
 
       - name: Run check script
         env:
           ICEHOST_SERVER_URL: ${{ secrets.ICEHOST_SERVER_URL }}
           ICEHOST_COOKIES: ${{ secrets.ICEHOST_COOKIES }}
+          PROXY_URL: http://127.0.0.1:1081
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: python icehost_run.py
@@ -49,7 +60,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          runs=$(curl -s -H "Authorization: Bearer $GH_TOKEN" \
+          runs=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
             "https://api.github.com/repos/${{ github.repository }}/actions/runs?per_page=100" \
             | jq -r '.workflow_runs[].id')
           count=0
@@ -57,7 +68,7 @@ jobs:
             count=$((count + 1))
             if [ $count -gt 1 ]; then
               echo "删除运行记录: $run_id"
-              curl -s -X DELETE -H "Authorization: Bearer $GH_TOKEN" \
+              curl -s -X DELETE -H "Authorization: Bearer ${{ github.token }}" \
                 "https://api.github.com/repos/${{ github.repository }}/actions/runs/$run_id"
             fi
           done

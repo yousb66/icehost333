@@ -8,6 +8,7 @@ from seleniumbase import SB
 
 SERVER_URL = os.getenv("ICEHOST_SERVER_URL")
 ICEHOST_COOKIES = os.getenv("ICEHOST_COOKIES")
+PROXY_URL = os.getenv("PROXY_URL", "")
 
 def send_tg_notification(message, photo_path=None):
     """发送结果和截图至 Telegram"""
@@ -45,8 +46,16 @@ def run():
         print("错误: 缺少 ICEHOST_SERVER_URL 环境变量")
         return
 
+    print(f"使用代理: {PROXY_URL or '直连'}")
+    
     # 1. 启动 SeleniumBase 并开启 UC 免密/防检测模式与 Xvfb 虚拟桌面 (xvfb=True)
-    with SB(uc=True, xvfb=True) as sb:
+    # 如果有代理，传入 proxy_server 参数
+    proxy_args = {}
+    if PROXY_URL:
+        proxy_args["proxy"] = PROXY_URL
+        print(f"Chrome 将使用代理: {PROXY_URL}")
+    
+    with SB(uc=True, xvfb=True, **proxy_args) as sb:
         print(f"正在访问 IceHost 面板: {SERVER_URL}")
         # 使用 UC 专属重连模式访问，能极大缓解首屏 Cloudflare 阻断
         sb.uc_open_with_reconnect(SERVER_URL, reconnect_time=8)
@@ -136,7 +145,7 @@ def run():
         # 5. 判定波兰语与英语红框限制
         page_source = sb.get_page_source()
         # 🟢 修复：增加了英文的报错关键词，防止英文面板误判
-        keywords = ["Nie możesz przedłużyć", "niedawno to zrobiłeś", "kolejne 6 godziny", "cannot extend", "recently", "next 6 hours"]
+        keywords = ["Nie możesz przedłużyć", "niedawno to zrobiłeś", "kolejne 6 godzin", "cannot extend", "recently", "next 6 hours"]
         is_limited = any(kw in page_source for kw in keywords)
 
         if is_limited:
