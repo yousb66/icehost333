@@ -34,15 +34,22 @@ jobs:
           sed -i 's|curl -s "https://api.github.com/repos/SagerNet/sing-box/releases"|curl -s -H "Authorization: Bearer ${{ github.token }}" "https://api.github.com/repos/SagerNet/sing-box/releases"|' /tmp/setup_proxy.sh
           echo "启动 sing-box..."
           bash /tmp/setup_proxy.sh &
-          sleep 5
-          echo "代理启动完成，测试连接..."
-          curl -s -x http://127.0.0.1:1081 https://api.ipify.org && echo
+          SINGBOX_PID=$!
+          echo "等待代理就绪..."
+          for i in {1..10}; do
+            if curl -s --max-time 2 --socks5 127.0.0.1:1080 https://api.ipify.org > /dev/null 2>&1; then
+              echo "代理就绪！"
+              break
+            fi
+            sleep 2
+          done
+          echo "代理出口 IP: $(curl -s --max-time 10 --socks5 127.0.0.1:1080 https://api.ipify.org && echo)"
 
       - name: Run check script
         env:
           ICEHOST_SERVER_URL: ${{ secrets.ICEHOST_SERVER_URL }}
           ICEHOST_COOKIES: ${{ secrets.ICEHOST_COOKIES }}
-          PROXY_URL: http://127.0.0.1:1081
+          PROXY_URL: socks5://127.0.0.1:1080
           TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
           TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: python icehost_run.py
