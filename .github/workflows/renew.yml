@@ -43,7 +43,7 @@ jobs:
             fi
             sleep 2
           done
-          IP=$(curl -s --max-time 10 --socks5 127.0.0.1:1080 https://api.ipify.org); echo "代理出口 IP: ${IP%.*.*}.*.* (完整IP已脱敏)"
+          IP=$(curl -s --max-time 10 --socks5 127.0.0.1:1080 https://api.ipify.org); echo "代理出口 IP: ${IP%%.*}.*.*.* (完整IP已脱敏)"
 
       - name: Run check script
         env:
