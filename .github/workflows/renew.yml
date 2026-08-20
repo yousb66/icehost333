@@ -43,7 +43,7 @@ jobs:
             fi
             sleep 2
           done
-          IP=$(curl -s --max-time 10 --socks5 127.0.0.1:1080 https://api.ipify.org); LAST=$(echo $IP | cut -d. -f4); echo "代理出口 IP: $(echo $IP | cut -d. -f1-3).${LAST:0:1}*.* (完整IP已脱敏)"
+          curl -s --max-time 10 --socks5 127.0.0.1:1080 https://api.ipify.org > /dev/null && echo "代理出口: 已验证通过 (IP已隐藏)"
 
       - name: Run check script
         env:
